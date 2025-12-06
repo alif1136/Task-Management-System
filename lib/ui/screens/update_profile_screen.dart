@@ -1,6 +1,6 @@
 import 'dart:convert';
+import 'dart:typed_data';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:task_manager_app/data/models/user_model.dart';
@@ -24,112 +24,113 @@ class UpdateProfileScreen extends StatefulWidget {
 }
 
 class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
-  final TextEditingController _emailTEController = TextEditingController();
-  final TextEditingController _firstNameTEController = TextEditingController();
-  final TextEditingController _lastNameTEController = TextEditingController();
-  final TextEditingController _mobileTEController = TextEditingController();
-  final TextEditingController _passwordTEController = TextEditingController();
+  final TextEditingController _emailTEC = TextEditingController();
+  final TextEditingController _firstNameTEC = TextEditingController();
+  final TextEditingController _lastNameTEC = TextEditingController();
+  final TextEditingController _mobileTEC = TextEditingController();
+  final TextEditingController _passwordTEC = TextEditingController();
 
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
   final ImagePicker _imagePicker = ImagePicker();
   XFile? _pickedImage;
 
-  bool _updateProfileInProgress = false;
+  bool _updateInProgress = false;
 
   @override
   void initState() {
     super.initState();
-    final UserModel userModel = AuthController.user!;
-    _emailTEController.text = userModel.email;
-    _firstNameTEController.text = userModel.firstName;
-    _lastNameTEController.text = userModel.lastName;
-    _mobileTEController.text = userModel.mobile;
+
+    final UserModel user = AuthController.userData!;
+
+    _emailTEC.text = user.email;
+    _firstNameTEC.text = user.firstName;
+    _lastNameTEC.text = user.lastName;
+    _mobileTEC.text = user.mobile;
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: TMAppBar(fromUpdateProfile: true),
+      appBar: const TMAppBar(),   // FIXED: removed invalid parameter
       body: ScreenBackground(
         child: SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Form(
-              key: _formKey,
-              autovalidateMode: AutovalidateMode.onUserInteraction,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                spacing: 8,
-                children: [
-                  const SizedBox(height: 36),
-                  Text(
-                    'Update Profile',
-                    style: Theme.of(context).textTheme.titleLarge,
+          padding: const EdgeInsets.all(24),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              spacing: 10,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 26),
+                Text(
+                  'Update Profile',
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+                const SizedBox(height: 8),
+
+                /// IMAGE PICKER
+                GestureDetector(
+                  onTap: _pickImage,
+                  child: PhotoPicker(pickedImage: _pickedImage),
+                ),
+
+                /// EMAIL (LOCKED)
+                TextFormField(
+                  enabled: false,
+                  controller: _emailTEC,
+                  decoration: const InputDecoration(hintText: 'Email'),
+                ),
+
+                /// FIRST NAME
+                TextFormField(
+                  controller: _firstNameTEC,
+                  decoration: const InputDecoration(hintText: 'First Name'),
+                  validator: (value) =>
+                  value!.trim().isEmpty ? 'Enter first name' : null,
+                ),
+
+                /// LAST NAME
+                TextFormField(
+                  controller: _lastNameTEC,
+                  decoration: const InputDecoration(hintText: 'Last Name'),
+                  validator: (value) =>
+                  value!.trim().isEmpty ? 'Enter last name' : null,
+                ),
+
+                /// MOBILE
+                TextFormField(
+                  controller: _mobileTEC,
+                  decoration: const InputDecoration(hintText: 'Mobile'),
+                  validator: (value) =>
+                  value!.trim().isEmpty ? 'Enter mobile number' : null,
+                ),
+
+                /// PASSWORD (OPTIONAL)
+                TextFormField(
+                  obscureText: true,
+                  controller: _passwordTEC,
+                  decoration: const InputDecoration(hintText: 'Password'),
+                  validator: (value) {
+                    if (value!.isNotEmpty && value.length < 6) {
+                      return 'Password must be at least 6 characters';
+                    }
+                    return null;
+                  },
+                ),
+
+                const SizedBox(height: 12),
+
+                /// SUBMIT BUTTON
+                Visibility(
+                  visible: !_updateInProgress,
+                  replacement: const CenteredCircularProgress(),
+                  child: FilledButton(
+                    onPressed: _onTapUpdateButton,
+                    child: const Icon(Icons.arrow_circle_right_outlined),
                   ),
-                  const SizedBox(height: 8),
-                  GestureDetector(
-                    onTap: _pickImage,
-                    child: PhotoPicker(pickedImage: _pickedImage),
-                  ),
-                  TextFormField(
-                    enabled: false,
-                    controller: _emailTEController,
-                    decoration: InputDecoration(hintText: 'Email'),
-                  ),
-                  TextFormField(
-                    controller: _firstNameTEController,
-                    decoration: InputDecoration(hintText: 'First name'),
-                    validator: (String? value) {
-                      if (value?.trim().isEmpty ?? true) {
-                        return 'Enter first name';
-                      }
-                      return null;
-                    },
-                  ),
-                  TextFormField(
-                    controller: _lastNameTEController,
-                    decoration: InputDecoration(hintText: 'Last name'),
-                    validator: (String? value) {
-                      if (value?.trim().isEmpty ?? true) {
-                        return 'Enter last name';
-                      }
-                      return null;
-                    },
-                  ),
-                  TextFormField(
-                    controller: _mobileTEController,
-                    decoration: InputDecoration(hintText: 'Mobile'),
-                    validator: (String? value) {
-                      if (value?.trim().isEmpty ?? true) {
-                        return 'Enter phone number';
-                      }
-                      return null;
-                    },
-                  ),
-                  TextFormField(
-                    obscureText: true,
-                    controller: _passwordTEController,
-                    decoration: InputDecoration(hintText: 'Password'),
-                    validator: (String? value) {
-                      String password = value ?? '';
-                      if (password.isNotEmpty && password.length < 6) {
-                        return 'Enter a password at lease 6 letters';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 8),
-                  Visibility(
-                    visible: _updateProfileInProgress == false,
-                    replacement: CenteredCircularProgress(),
-                    child: FilledButton(
-                      onPressed: _onTapUpdateButton,
-                      child: Icon(Icons.arrow_circle_right_outlined),
-                    ),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ),
@@ -139,7 +140,10 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
 
   Future<void> _pickImage() async {
     XFile? image = await _imagePicker.pickImage(
-        source: ImageSource.gallery, imageQuality: 50);
+      source: ImageSource.gallery,
+      imageQuality: 50,
+    );
+
     if (image != null) {
       _pickedImage = image;
       setState(() {});
@@ -153,40 +157,46 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
   }
 
   Future<void> _updateProfile() async {
-    _updateProfileInProgress = true;
+    _updateInProgress = true;
     setState(() {});
 
-    Map<String, dynamic> requestBody = {
-      "email": _emailTEController.text,
-      "firstName": _firstNameTEController.text.trim(),
-      "lastName": _lastNameTEController.text.trim(),
-      "mobile": _mobileTEController.text.trim(),
+    final Map<String, dynamic> body = {
+      "email": _emailTEC.text.trim(),
+      "firstName": _firstNameTEC.text.trim(),
+      "lastName": _lastNameTEC.text.trim(),
+      "mobile": _mobileTEC.text.trim(),
     };
 
-    if (_passwordTEController.text.isNotEmpty) {
-      requestBody['password'] = _passwordTEController.text;
+    /// Add password only if user typed it
+    if (_passwordTEC.text.isNotEmpty) {
+      body['password'] = _passwordTEC.text;
     }
 
+    /// Add image if selected
     if (_pickedImage != null) {
-      // IMAGE SHOULD LESS THAN 100KB
-      Uint8List imageBytes = await _pickedImage!.readAsBytes();
-      requestBody['photo'] = base64Encode(imageBytes);
+      Uint8List bytes = await _pickedImage!.readAsBytes();
+      body['photo'] = base64Encode(bytes);
     }
 
-    final NetworkResponse response = await NetworkCaller.postRequest(
-      Urls.updateProfileUrl,
-      body: requestBody,
-    );
+    final NetworkResponse response =
+    await NetworkCaller.postRequest(Urls.updateProfileUrl, body: body);
 
-    _updateProfileInProgress = false;
+    _updateInProgress = false;
     setState(() {});
 
-    if (response.isSuccess) {
-      requestBody['_id'] = AuthController.user!.id;
-      await AuthController.updateUserData(UserModel.fromJson(requestBody));
-      showSnackBarMessage(context, 'Profile has been updated!');
-    } else {
+    if (!response.isSuccess) {
       showSnackBarMessage(context, response.errorMessage);
+      return;
     }
+
+    /// Update local user data
+    final updated = {
+      "_id": AuthController.userData!.id,
+      ...body,
+    };
+
+    await AuthController.updateUserData(UserModel.fromJson(updated));
+
+    showSnackBarMessage(context, 'Profile updated successfully!');
   }
 }

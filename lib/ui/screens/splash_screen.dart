@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:task_manager_app/ui/controllers/auth_controller.dart';
 import 'package:task_manager_app/ui/screens/main_bottom_nav_holder_screen.dart';
 import 'package:task_manager_app/ui/widgets/screen_background.dart';
@@ -23,7 +22,7 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   Future<void> _moveToNextScreen() async {
-    await Future.delayed(Duration(seconds: 2));
+    await Future.delayed(const Duration(seconds: 5));
     bool isLoggedIn = await AuthController.isUserAlreadyLoggedIn();
     if (isLoggedIn) {
       await AuthController.getUserData();
@@ -37,7 +36,12 @@ class _SplashScreenState extends State<SplashScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: ScreenBackground(
-        child: Center(child: SvgPicture.asset(AssetPaths.logoSvg, width: 120)),
+        child: Center(
+          child: Image.asset(
+            AssetPaths.logo,   // <--- FIXED HERE
+            width: 210,
+          ),
+        ),
       ),
     );
   }

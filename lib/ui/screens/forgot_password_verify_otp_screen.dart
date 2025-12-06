@@ -1,12 +1,13 @@
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:pin_code_fields/pin_code_fields.dart';
-import 'package:task_manager_app/ui/screens/reset_password_screen.dart';
-import 'package:task_manager_app/ui/screens/sign_in_screen.dart';
-import 'package:task_manager_app/ui/widgets/screen_background.dart';
+import 'package:http/http.dart' as http;
+
+import '../../data/utils/urls.dart';
+import 'reset_password_screen.dart';
 
 class ForgotPasswordVerifyOtpScreen extends StatefulWidget {
-  const ForgotPasswordVerifyOtpScreen({super.key});
+  final String? email;
+
+  const ForgotPasswordVerifyOtpScreen({super.key, this.email});
 
   static const String name = '/forgot-password-verify-otp';
 
@@ -17,83 +18,97 @@ class ForgotPasswordVerifyOtpScreen extends StatefulWidget {
 
 class _ForgotPasswordVerifyOtpScreenState
     extends State<ForgotPasswordVerifyOtpScreen> {
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: ScreenBackground(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            spacing: 8,
-            children: [
-              const SizedBox(height: 60),
-              Text(
-                'OTP Verification',
-                style: Theme.of(context).textTheme.titleLarge,
-              ),
-              Text(
-                'A 6 digits verification OTP has been sent to your email address',
-                style: Theme.of(context).textTheme.labelMedium,
-              ),
-              const SizedBox(height: 8),
-              PinCodeTextField(
-                length: 6,
-                obscureText: false,
-                animationType: AnimationType.fade,
-                keyboardType: TextInputType.number,
-                pinTheme: PinTheme(
-                  shape: PinCodeFieldShape.box,
-                  borderRadius: BorderRadius.circular(5),
-                  fieldHeight: 50,
-                  fieldWidth: 40,
-                  activeFillColor: Colors.white,
-                  inactiveFillColor: Colors.white,
-                  selectedFillColor: Colors.white,
-                ),
-                animationDuration: Duration(milliseconds: 300),
-                backgroundColor: Colors.transparent,
-                enableActiveFill: true,
-                appContext: context,
-              ),
-              const SizedBox(height: 8),
-              FilledButton(
-                onPressed: _onTapVerifyButton,
-                child: Text('Verify'),
-              ),
-              const SizedBox(height: 24),
-              Center(
-                child: RichText(
-                  text: TextSpan(
-                    style: TextStyle(
-                      color: Colors.black,
-                      fontWeight: FontWeight.w500,
-                    ),
-                    text: "Have an account? ",
-                    children: [
-                      TextSpan(
-                        style: TextStyle(color: Colors.green),
-                        text: 'Sign In',
-                        recognizer: TapGestureRecognizer()
-                          ..onTap = _onTapSignInButton,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
+  final TextEditingController _otp = TextEditingController();
+  bool _loading = false;
+
+  void _showSnack(String msg) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(msg)),
     );
   }
 
-  void _onTapSignInButton() {
-    Navigator.pushNamedAndRemoveUntil(
-        context, SignInScreen.name, (predicate) => false);
+  Future<void> _verifyOtp() async {
+    FocusScope.of(context).unfocus();
+
+    final email = (widget.email ?? '').trim().toLowerCase();
+    final otp = _otp.text.trim();
+
+    if (email.isEmpty || otp.isEmpty) {
+      _showSnack('Email and OTP are required');
+      return;
+    }
+
+    setState(() => _loading = true);
+    try {
+      // Try primary endpoint
+      final urls = [
+        '${Urls.recoverVerifyOtpUrlPrimary}/$email/$otp',
+        '${Urls.recoverVerifyOtpUrlAlt}/$email/$otp',
+      ];
+
+      for (final url in urls) {
+        final res = await http.get(Uri.parse(url));
+
+        debugPrint(
+            'URL: $url\nMethod: GET\nStatus Code: ${res.statusCode}\nBody: ${res.body}\n');
+
+        if (res.statusCode == 200) {
+          if (!mounted) return;
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => ResetPasswordScreen(
+                initialEmail: email,
+                initialOtp: otp,
+              ),
+            ),
+          );
+          return;
+        }
+      }
+
+      _showSnack('Invalid OTP');
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
   }
 
-  void _onTapVerifyButton() {
-    Navigator.pushNamed(context, ResetPasswordScreen.name);
+  @override
+  Widget build(BuildContext context) {
+    final emailText = widget.email ?? '';
+
+    return Scaffold(
+      appBar: AppBar(title: const Text('Verify OTP')),
+      body: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            if (emailText.isNotEmpty)
+              Text('OTP sent to: $emailText'),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _otp,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(hintText: 'Enter OTP'),
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              height: 48,
+              child: ElevatedButton(
+                onPressed: _loading ? null : _verifyOtp,
+                child: _loading
+                    ? const SizedBox(
+                  width: 22,
+                  height: 22,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+                    : const Text('Verify'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

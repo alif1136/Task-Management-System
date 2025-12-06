@@ -1,19 +1,45 @@
+// lib/data/utils/urls.dart
+
 class Urls {
-  static const String _baseUrl = 'http://35.73.30.144:2005/api/v1';
+  // Base URL from your Postman API
+  static const String baseUrl = 'http://35.73.30.144:2005/api/v1';
 
-  static const String registrationUrl = '$_baseUrl/Registration';
-  static const String loginUrl = '$_baseUrl/Login';
-  static const String createNewTaskUrl = '$_baseUrl/createTask';
-  static const String newTasksUrl = '$_baseUrl/listTaskByStatus/New';
-  static const String progressTasksUrl = '$_baseUrl/listTaskByStatus/Progress';
-  static const String completedTasksUrl = '$_baseUrl/listTaskByStatus/Completed';
-  static const String cancelledTasksUrl = '$_baseUrl/listTaskByStatus/Cancelled';
-  static const String taskCountUrl = '$_baseUrl/taskStatusCount';
-  static const String updateProfileUrl = '$_baseUrl/ProfileUpdate';
+  // ---------- Auth ----------
+  static const String registrationUrl = '$baseUrl/Registration';
+  static const String loginUrl        = '$baseUrl/Login';
 
-  static String changeTaskStatusUrl(String taskId, String status) =>
-      '$_baseUrl/updateTaskStatus/$taskId/$status';
+  // Profile
+  static const String updateProfileUrl  = '$baseUrl/ProfileUpdate';
+  static const String profileDetailsUrl = '$baseUrl/profileDetails';
 
-  static String deleteTaskUrl(String taskId) =>
-      '$_baseUrl/deleteTask/$taskId';
+  // ---------- Password recovery (OTP) ----------
+  // Send OTP to email
+  static const String recoverVerifyEmailUrl = '$baseUrl/RecoverVerifyEmail'; // + /{email}
+
+  // Some servers use RecoverVerifyOtp, some RecoverVerifyOTP
+  static const String recoverVerifyOtpUrlPrimary = '$baseUrl/RecoverVerifyOtp'; // + /{email}/{otp}
+  static const String recoverVerifyOtpUrlAlt     = '$baseUrl/RecoverVerifyOTP'; // + /{email}/{otp}
+
+  // Reset password with email + OTP + new password
+  static const String recoverResetPasswordUrl = '$baseUrl/RecoverResetPassword';
+
+  // ---------- Tasks ----------
+  // Create task
+  static const String createNewTaskUrl = '$baseUrl/createTask';
+
+  // List tasks by status (as used in your task list screens)
+  static String get newTasksUrl       => '$baseUrl/listTaskByStatus/New';
+  static String get progressTasksUrl  => '$baseUrl/listTaskByStatus/InProgress';
+  static String get completedTasksUrl => '$baseUrl/listTaskByStatus/Completed';
+  static String get cancelledTasksUrl => '$baseUrl/listTaskByStatus/Canceled';
+
+  // Task count by status
+  static const String taskCountUrl = '$baseUrl/taskStatusCount';
+
+  // Change task status
+  static String changeTaskStatusUrl(String id, String status) =>
+      '$baseUrl/updateTaskStatus/$id/$status';
+
+  // Delete task
+  static String deleteTaskUrl(String id) => '$baseUrl/deleteTask/$id';
 }

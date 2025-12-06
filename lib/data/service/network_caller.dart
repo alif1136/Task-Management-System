@@ -56,11 +56,12 @@ class NetworkCaller {
       _logRequest(url, body: body);
       Response response = await post(
         uri,
-        headers: {
-          'Content-Type': 'application/json',
-          'token': AuthController.accessToken ?? ''
-        },
-        body: jsonEncode(body),
+          headers: {
+            'token': AuthController.accessToken ?? '',
+            'Content-Type': 'application/json'
+          },
+
+          body: jsonEncode(body),
       );
       _logResponse(url, response);
 
